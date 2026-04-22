@@ -95,8 +95,8 @@ def generate_cards(data):
         name = str(row.get('name', '')).strip().upper()
         address = str(row.get('address', '')).strip().upper()
 
-        c.drawString(400, 438, name)
-        c.drawString(400, 412, address)
+        c.drawString(400, 436, name)
+        c.drawString(400, 414, address)
 
         c.save()
 
