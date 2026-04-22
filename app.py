@@ -79,14 +79,14 @@ def generate_cards(data):
         overlay = f"overlay_{i}.pdf"
 
         c = canvas.Canvas(overlay)
-        c.setFont("Helvetica-Bold", 16)
+        c.setFont("Helvetica-Bold", 14)
         c.setFillColorRGB(0.5, 0, 0)
 
         name = str(row.get('name', '')).strip().upper()
         address = str(row.get('address', '')).strip().upper()
 
-        c.drawString(400, 440, name)
-        c.drawString(400, 414, address)
+        c.drawString(400, 438, name)
+        c.drawString(400, 412, address)
 
         c.save()
 
