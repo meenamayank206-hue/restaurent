@@ -24,7 +24,9 @@ body { font-family: Arial; background:#f4f4f4; text-align:center; }
     width:90%; max-width:400px;
     border-radius:12px;
 }
-input { width:90%; padding:8px; margin:5px; }
+input, select {
+    width:90%; padding:8px; margin:5px;
+}
 button {
     background:#8B0000; color:white;
     padding:10px; border:none;
@@ -50,6 +52,7 @@ function addRow() {
 <h2>🎉 Card Generator</h2>
 
 <form method="post" enctype="multipart/form-data">
+
 <p><b>Upload CSV</b></p>
 <input type="file" name="file"><br><br>
 
@@ -62,7 +65,14 @@ function addRow() {
 
 <button type="button" onclick="addRow()">➕ Add More</button><br><br>
 
+<p><b>Download Type</b></p>
+<select name="download_type">
+    <option value="zip">ZIP (All Cards)</option>
+    <option value="individual">Individual PDFs</option>
+</select><br><br>
+
 <button type="submit">🚀 Generate</button>
+
 </form>
 
 </div>
@@ -71,7 +81,7 @@ function addRow() {
 </html>
 """
 
-# ---------- CARD GENERATION ----------
+# ---------- GENERATE CARDS ----------
 def generate_cards(data):
     pdf_paths = []
 
@@ -90,7 +100,6 @@ def generate_cards(data):
 
         c.save()
 
-        # Read template
         template_pdf = PdfReader(TEMPLATE)
         overlay_pdf = PdfReader(overlay)
 
@@ -105,7 +114,6 @@ def generate_cards(data):
         for p in range(1, len(template_pdf.pages)):
             writer.add_page(template_pdf.pages[p])
 
-        # Safe filename
         filename = re.sub(r'[^A-Za-z0-9_]', '', name.replace(" ", "_")) + ".pdf"
         path = os.path.join(OUTPUT, filename)
 
@@ -121,18 +129,18 @@ def generate_cards(data):
         for f in pdf_paths:
             z.write(f, os.path.basename(f))
 
-    return zip_path
+    return pdf_paths, zip_path
 
 # ---------- ROUTES ----------
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
 
-        # CSV Upload
+        download_type = request.form.get("download_type")
+
+        # CSV upload
         if request.files.get("file") and request.files["file"].filename != "":
             data = pd.read_csv(request.files["file"]).fillna("")
-
-        # Manual input
         else:
             names = request.form.getlist("name")
             addresses = request.form.getlist("address")
@@ -144,10 +152,27 @@ def home():
 
             data = pd.DataFrame(rows)
 
-        zip_file = generate_cards(data)
-        return send_file(zip_file, as_attachment=True)
+        pdf_paths, zip_path = generate_cards(data)
+
+        # ZIP download
+        if download_type == "zip":
+            return send_file(zip_path, as_attachment=True)
+
+        # Individual download page
+        else:
+            links = ""
+            for path in pdf_paths:
+                fname = os.path.basename(path)
+                links += f'<a href="/download/{fname}">{fname}</a><br>'
+
+            return f"<h2>Download PDFs</h2>{links}"
 
     return render_template_string(HTML)
+
+# Download route
+@app.route("/download/<filename>")
+def download_file(filename):
+    return send_file(os.path.join(OUTPUT, filename), as_attachment=True)
 
 # ---------- START ----------
 if __name__ == "__main__":
